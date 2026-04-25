@@ -18,10 +18,12 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
     product: {
         type: Object,
         required: true,
     },
 });
+
+const product = props.product?.data || props.product;
 </script>
