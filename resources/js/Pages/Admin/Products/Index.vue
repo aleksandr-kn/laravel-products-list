@@ -109,8 +109,13 @@ function confirmDelete(item) {
 async function handleDelete() {
     try {
         await deleteProduct(deletingProduct.value.id);
-        // обновляем список после удаления
-        await getProducts({ page: paginationMeta.value?.current_page || 1 });
+
+        // если на странице был последний товар - возвращаемся на предыдущую
+        const currentPage = paginationMeta.value?.current_page || 1;
+        const isLastOnPage = productList.value.length === 1;
+        const page = isLastOnPage && currentPage > 1 ? currentPage - 1 : currentPage;
+
+        await getProducts({ page });
         showModal.value = false;
         deletingProduct.value = null;
     } catch (e) {
