@@ -113,4 +113,73 @@ class ProductApiTest extends TestCase
 
         $this->assertSoftDeleted('products', ['id' => $product->id]);
     }
+
+    /**
+     * Проверяем обновление товара авторизованным пользователем
+     * Отправляем PUT с новыми данными, убеждаемся что они сохранились
+     */
+    public function test_can_update_product_with_auth(): void
+    {
+        $user = $this->createAuthUser();
+        $category = Category::create(['name' => 'Электроника']);
+        $product = Product::factory()->create(['category_id' => $category->id]);
+
+        $response = $this->putJson("/api/products/{$product->id}", [
+            'name' => 'Обновленный товар',
+            'price' => 299.90,
+        ], $this->authHeaders($user));
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'Обновленный товар');
+    }
+
+    /**
+     * Проверяем что удаленный товар не появляется в списке
+     * SoftDeletes должен автоматически фильтровать удаленные записи
+     */
+    public function test_deleted_product_not_visible_in_list(): void
+    {
+        $category = Category::create(['name' => 'Электроника']);
+        $product = Product::factory()->create(['category_id' => $category->id]);
+
+        $product->delete();
+
+        $response = $this->getJson('/api/products');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    /**
+     * Проверяем что в ответе API товар содержит данные о категории
+     * Eager loading через with('category') должен подгрузить связь
+     */
+    public function test_products_include_category(): void
+    {
+        $category = Category::create(['name' => 'Электроника']);
+        Product::factory()->create(['category_id' => $category->id]);
+
+        $response = $this->getJson('/api/products');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.category.name', 'Электроника');
+    }
+
+    /**
+     * Проверяем фильтрацию товаров по категории
+     * При передаче category_id должны вернуться только товары этой категории
+     */
+    public function test_can_filter_products_by_category(): void
+    {
+        $electronics = Category::create(['name' => 'Электроника']);
+        $books = Category::create(['name' => 'Книги']);
+
+        Product::factory(3)->create(['category_id' => $electronics->id]);
+        Product::factory(2)->create(['category_id' => $books->id]);
+
+        $response = $this->getJson("/api/products?category_id={$electronics->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(3, 'data');
+    }
 }
