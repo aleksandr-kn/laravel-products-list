@@ -28,7 +28,7 @@ class ProductController extends Controller
         return new ProductResource($product->load('category'));
     }
 
-    public function store(StoreProductRequest $request): ProductResource
+    public function store(StoreProductRequest $request): JsonResponse
     {
         $product = Product::create($request->validated());
 
