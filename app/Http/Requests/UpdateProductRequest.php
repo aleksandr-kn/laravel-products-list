@@ -15,8 +15,8 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name'        => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'price'       => ['sometimes', 'required', 'numeric', 'gt:0'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'price'       => ['sometimes', 'required', 'numeric', 'gt:0', 'max:99999999', 'regex:/^\d+(\.\d{1,2})?$/'],
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
         ];
     }
