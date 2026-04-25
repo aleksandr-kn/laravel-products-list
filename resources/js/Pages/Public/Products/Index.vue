@@ -5,11 +5,18 @@
             <a href="/login" class="text-sm text-blue-600 hover:underline">Войти</a>
         </div>
 
-        <CategoryFilter
-            v-model="selectedCategory"
-            :categories="categories"
-            class="mb-6"
-        />
+        <div class="flex flex-wrap gap-4 mb-6">
+            <input
+                v-model="search"
+                type="text"
+                placeholder="Поиск по названию..."
+                class="border rounded px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <CategoryFilter
+                v-model="selectedCategory"
+                :categories="categories"
+            />
+        </div>
 
         <div v-if="loading" class="text-center text-gray-500 py-12">
             Загрузка...
@@ -63,20 +70,37 @@ const props = defineProps({
 const { products: productList, pagination: paginationMeta, loading, getProducts } = useProductApi();
 
 const selectedCategory = ref('');
+const search = ref('');
+let debounceTimer = null;
 
 // при первом рендере берем данные из Inertia props
 productList.value = props.products?.data || [];
 paginationMeta.value = props.products?.meta || null;
 
-// при смене категории - AJAX-запрос через API
-watch(selectedCategory, (categoryId) => {
-    getProducts({ category_id: categoryId || undefined, page: 1 });
+function fetchProducts(page = 1) {
+    getProducts({
+        category_id: selectedCategory.value || undefined,
+        search: search.value.length >= 2 ? search.value : undefined,
+        page,
+    });
+}
+
+// при смене категории сбрасываем поиск
+// двумя фильтрами одновременно
+watch(selectedCategory, () => {
+    search.value = '';
+    fetchProducts();
+});
+
+// поиск с дебаунсом 300мс, минимум 2 символа
+watch(search, (val) => {
+    clearTimeout(debounceTimer);
+    if (val.length >= 2) {
+        debounceTimer = setTimeout(() => fetchProducts(), 300);
+    }
 });
 
 function goToPage(page) {
-    getProducts({
-        category_id: selectedCategory.value || undefined,
-        page,
-    });
+    fetchProducts(page);
 }
 </script>

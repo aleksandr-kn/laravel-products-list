@@ -15,6 +15,7 @@ class PublicController extends Controller
     {
         $products = Product::with('category')
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))
+            ->search($request->search)
             ->paginate(15);
 
         return Inertia::render('Public/Products/Index', [
